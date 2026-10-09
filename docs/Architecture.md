@@ -97,7 +97,7 @@ type ExtractedPage = {
 
 1. **Validate URL syntax and policy before any network I/O.**
 2. **Resolve DNS (or accept a literal), keep only public addresses.**
-3. **Pin the outbound connection** with a custom `lookup` that returns only the validated address (Node `http`/`https`), preserving original hostname for `Host`, TLS SNI, and certificate verification. The lookup supports both `(address, family)` and `{ all: true }` Node callback shapes (Phase 3 regression fix).
+3. **Pin the outbound connection** with a custom `lookup` that returns only the validated address (Node `http`/`https`), preserving original hostname for `Host`, TLS SNI, and certificate verification. The lookup supports both `(address, family)` and `{ all: true }` Node callback shapes (Phase 3 regression fix), plus the legacy callback-as-second-argument overload. Only the first public address is pinned; there is no automatic fallback to other resolved addresses after connect failure.
 4. **Never disable TLS verification** (`rejectUnauthorized: true`).
 5. **Do not auto-follow redirects.** Each `Location` is resolved, re-validated, and re-pinned. Max **3** redirects.
 6. **Overall timeout ~12s**; body cap **~2 MiB**; unsupported non-HTML content types rejected.
@@ -150,8 +150,16 @@ User-facing messages are stable and non-leaking. Optional `diagnostic` fields ar
 
 ## Testing architecture
 
-- **Vitest** — URL/IP policy, fetch fakes, extraction fixtures, AI provider injection, opt-in live smoke.
-- **Playwright** — later phase for browser flows.
+- **Vitest** — URL/IP policy, fetch fakes, extraction fixtures, AI provider injection, adversarial SSRF/prompt suites, opt-in live smoke (`smoke:summarize`, `smoke:fullstack`).
+- **Playwright** — Chromium E2E against `next start` on dedicated port `4173`. Default suite mocks `POST /api/summarize` via route interception. Opt-in live browser smoke: `LEDESIFT_LIVE_E2E=1` / `npm run test:e2e:live`.
+
+### Live smoke scope note
+
+`npm run smoke:fullstack` exercises real retrieval + Gemini through `handleSummarizePost` in-process. It does **not** spawn an HTTP Next.js server. Browser → HTTP → Gemini is covered by the opt-in Playwright live project.
+
+### Production rate limiting (Phase 5)
+
+Platform WAF rate limiting is a deployment prerequisite. Provisional starting policy: IP-keyed fixed window, 60s / 5 requests, HTTP 429 on `POST /api/summarize`. Vercel counters are per-region; Hobby includes one rate-limit rule per project.
 
 ## Explicit non-architecture
 

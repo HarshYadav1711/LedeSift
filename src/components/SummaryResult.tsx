@@ -46,7 +46,7 @@ export function SummaryResult({ data }: SummaryResultProps) {
       <p className="text-sm uppercase tracking-[0.08em] text-muted">Result</p>
       <h2
         id="summary-heading"
-        className="mt-2 font-serif text-2xl tracking-tight text-ink sm:text-3xl"
+        className="mt-2 break-words font-serif text-2xl tracking-tight text-ink sm:text-3xl"
       >
         {data.source.title || "Untitled page"}
       </h2>
@@ -77,7 +77,9 @@ export function SummaryResult({ data }: SummaryResultProps) {
         <h3 className="text-sm font-medium uppercase tracking-[0.08em] text-muted">
           Summary
         </h3>
-        <p className="mt-3 text-lg leading-relaxed text-ink">{data.summary}</p>
+        <p className="mt-3 break-words text-lg leading-relaxed text-ink">
+          {data.summary}
+        </p>
       </div>
 
       <div className="mt-8 max-w-prose">
@@ -88,7 +90,7 @@ export function SummaryResult({ data }: SummaryResultProps) {
             : ""}
         </h3>
         {data.keyPoints.length > 0 ? (
-          <ul className="mt-3 list-disc space-y-2 pl-5 text-base leading-relaxed text-ink">
+          <ul className="mt-3 list-disc space-y-2 break-words pl-5 text-base leading-relaxed text-ink">
             {data.keyPoints.map((point) => (
               <li key={point}>{point}</li>
             ))}

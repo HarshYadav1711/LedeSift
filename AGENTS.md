@@ -71,4 +71,4 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 ## Phase gate
 
-Current authorized work: **Phase 3 — Full-stack API and editorial interface**. Do not begin Phase 4 until explicitly authorized.
+Current authorized work: **Phase 4 — Adversarial verification, browser E2E, and UX hardening**. Do not begin Phase 5 until explicitly authorized.

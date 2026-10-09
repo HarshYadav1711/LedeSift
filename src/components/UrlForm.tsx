@@ -36,6 +36,7 @@ export function UrlForm({
           autoComplete="url"
           placeholder="https://example.com/article"
           value={value}
+          disabled={submitting}
           aria-invalid={inlineError ? true : undefined}
           aria-busy={submitting || undefined}
           aria-describedby={inlineError ? "url-error" : "url-hint"}
@@ -44,8 +45,9 @@ export function UrlForm({
         />
         <button
           type="submit"
+          disabled={submitting}
           aria-busy={submitting || undefined}
-          className="min-h-12 shrink-0 bg-accent px-5 py-3 text-sm font-medium tracking-wide text-[#F7F5F0] transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+          className="min-h-12 shrink-0 bg-accent px-5 py-3 text-sm font-medium tracking-wide text-[#F7F5F0] transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink disabled:cursor-not-allowed disabled:opacity-70"
         >
           {submitting ? "Distilling…" : "Distill this page"}
         </button>

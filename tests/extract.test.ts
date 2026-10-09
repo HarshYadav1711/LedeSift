@@ -155,4 +155,42 @@ describe("extractMainContent", () => {
   it("uses the default extraction bound", () => {
     expect(MAX_EXTRACTED_CHARS).toBeGreaterThan(1000);
   });
+
+  it("extracts unicode article content", () => {
+    const result = extractMainContent({
+      html: load("unicode-article.html"),
+      requestedUrl: "https://example.com/unicode",
+      finalUrl: "https://example.com/unicode",
+    });
+
+    expect(result.title.length).toBeGreaterThan(0);
+    expect(result.text).toMatch(/seedling density|अंकुर|मिश्रित/i);
+    expect(result.wordCount).toBeGreaterThan(30);
+  });
+
+  it("rejects thin boilerplate / navigation-only pages", () => {
+    try {
+      extractMainContent({
+        html: load("boilerplate-thin.html"),
+        requestedUrl: "https://example.com/",
+        finalUrl: "https://example.com/",
+      });
+      throw new Error("expected throw");
+    } catch (error) {
+      expect(error).toBeInstanceOf(RetrievalError);
+      expect((error as RetrievalError).code).toBe("INSUFFICIENT_CONTENT");
+    }
+  });
+
+  it("keeps prompt-injection HTML as extractable text without executing it", () => {
+    const result = extractMainContent({
+      html: load("prompt-injection.html"),
+      requestedUrl: "https://example.com/estuary",
+      finalUrl: "https://example.com/estuary",
+    });
+
+    expect(result.text).toMatch(/estuary salinity/i);
+    expect(result.text).toMatch(/IGNORE PREVIOUS/i);
+    expect(result.wordCount).toBeGreaterThan(30);
+  });
 });

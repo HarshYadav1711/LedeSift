@@ -133,6 +133,8 @@ describe("SummarizeApp", () => {
     const button = screen.getByRole("button", { name: /distill this page/i });
     await user.click(button);
     expect(button).toHaveAttribute("aria-busy", "true");
+    expect(button).toBeDisabled();
+    expect(screen.getByLabelText(/webpage url/i)).toBeDisabled();
     expect(requestSummarize).toHaveBeenCalledTimes(1);
 
     resolveRequest({
@@ -158,9 +160,11 @@ describe("SummarizeApp", () => {
     expect(screen.getByText(/no separate key points/i)).toBeInTheDocument();
   });
 
-  it("ignores stale responses", async () => {
+  it("ignores stale responses when overlapping requests resolve out of order", async () => {
     const user = userEvent.setup();
     const resolvers: Array<(value: unknown) => void> = [];
+    // Intentionally ignore AbortSignal so both promises can settle — exercises
+    // the request-id guard beyond the production AbortController path.
     requestSummarize.mockImplementation(
       () =>
         new Promise((resolve) => {
@@ -169,33 +173,22 @@ describe("SummarizeApp", () => {
     );
 
     render(<SummarizeApp />);
-    const input = screen.getByLabelText(/webpage url/i);
-    await user.clear(input);
+    const input = screen.getByLabelText(/webpage url/i) as HTMLInputElement;
     await user.type(input, "https://example.com/first");
     await user.click(screen.getByRole("button", { name: /distill/i }));
+    expect(screen.getByRole("button", { name: /distilling/i })).toBeDisabled();
 
+    // Simulate an overlapping submit by re-enabling controls (production disables them).
+    const button = screen.getByRole("button", {
+      name: /distilling/i,
+    }) as HTMLButtonElement;
+    button.disabled = false;
+    input.disabled = false;
     await user.clear(input);
     await user.type(input, "https://example.com/second");
-    await user.click(screen.getByRole("button", { name: /distill/i }));
+    await user.click(button);
 
     expect(resolvers.length).toBe(2);
-
-    resolvers[0]?.({
-      kind: "success",
-      data: {
-        source: {
-          requestedUrl: "https://example.com/first",
-          finalUrl: "https://example.com/first",
-          title: "Stale Title",
-          wordCount: 40,
-          extractionMethod: "readability",
-        },
-        summary: "This stale summary should not appear in the UI.",
-        keyPoints: ["stale"],
-        coverage: { extractionTruncated: false, inputTruncated: false },
-        sourcePreview: "stale",
-      },
-    });
 
     resolvers[1]?.({
       kind: "success",
@@ -217,8 +210,30 @@ describe("SummarizeApp", () => {
     await waitFor(() => {
       expect(screen.getByRole("heading", { name: /fresh title/i })).toBeInTheDocument();
     });
-    expect(screen.queryByText(/stale title/i)).not.toBeInTheDocument();
     expect(screen.getByText(/partial coverage/i)).toBeInTheDocument();
+
+    // Late stale resolution must not overwrite the newer result.
+    resolvers[0]?.({
+      kind: "success",
+      data: {
+        source: {
+          requestedUrl: "https://example.com/first",
+          finalUrl: "https://example.com/first",
+          title: "Stale Title",
+          wordCount: 40,
+          extractionMethod: "readability",
+        },
+        summary: "This stale summary should not appear in the UI.",
+        keyPoints: ["stale"],
+        coverage: { extractionTruncated: false, inputTruncated: false },
+        sourcePreview: "stale",
+      },
+    });
+
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { name: /fresh title/i })).toBeInTheDocument();
+    });
+    expect(screen.queryByText(/stale title/i)).not.toBeInTheDocument();
   });
 
   it("copies summary text and reports clipboard failure", async () => {

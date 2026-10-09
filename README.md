@@ -4,7 +4,7 @@
 
 LedeSift accepts a public webpage URL, extracts the main readable text, and returns a concise Gemini summary with key takeaways.
 
-> **Status:** Phase 3 full-stack API + editorial UI are implemented for local use. Deployment / production verification are not complete. Follow `docs/phases.md`.
+> **Status:** Phase 4 browser E2E + hardening are implemented for local verification. Deployment / production verification are not complete. Follow `docs/phases.md`.
 
 ## Stack
 
@@ -12,8 +12,8 @@ LedeSift accepts a public webpage URL, extracts the main readable text, and retu
 - `POST /api/summarize` Node.js Route Handler
 - Mozilla Readability + jsdom
 - `@google/genai` + `gemini-2.5-flash-lite`
-- Zod + Vitest
-- Deploy target: Vercel (not verified in Phase 3)
+- Zod + Vitest + Playwright (Chromium)
+- Deploy target: Vercel (not verified yet)
 
 ## Setup
 
@@ -40,11 +40,15 @@ npm run dev              # local UI + API
 npm run build
 npm run start
 npm run lint
-npm test                 # deterministic suite (live smokes stay skipped)
+npm test                 # deterministic Vitest (live smokes stay skipped)
+npm run test:e2e         # build + Playwright mocked browser suite
+npm run test:e2e:live    # opt-in real browser → API → Gemini (needs key)
 npm run smoke:summarize  # Phase 2 live Gemini library smoke
-npm run smoke:fullstack  # Phase 3 live retrieve + summarize API smoke
+npm run smoke:fullstack  # live retrieve + summarize via handler (needs key)
 npx tsc --noEmit
 ```
+
+Playwright starts a production server on port **4173** (override with `PLAYWRIGHT_PORT`). Default E2E mocks `/api/summarize`; it does not prove Gemini. See `docs/PHASE4_VERIFICATION.md`.
 
 ## API contract
 
@@ -95,6 +99,8 @@ Responses use `Cache-Control: no-store`. Same-origin browser use is intended; th
 ### Production exposure prerequisite
 
 Before exposing this endpoint publicly on Vercel, configure platform-level rate limiting / bot protection. This repository does not implement distributed rate limiting.
+
+**Provisional Phase 5 WAF starting point:** `POST /api/summarize`, IP key, 60s window, 5 requests, HTTP 429. Vercel rate-limit counters are per-region; Hobby includes one rate-limit rule per project. Do not treat this as a globally guaranteed cap.
 
 ## Known limitations
 

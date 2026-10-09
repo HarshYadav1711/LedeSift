@@ -54,3 +54,9 @@ Generic AI SaaS templates, gradient mesh backgrounds, glassmorphism, decorative 
 - Results: title, domain, summary, key takeaways count, partial-coverage notice, copy, open source, collapsible text preview.
 - Responsive single-column reading layout from ~320px upward.
 - Focus rings use accent/ink; reduced-motion respected.
+
+## Phase 4 clarifications (tested)
+
+- While a summarize request is in flight, the URL field and Distill control are **disabled** (loading busy state).
+- Long titles, summary text, key points, and previews use wrapping/`overflow-wrap` so narrow viewports do not force horizontal scroll.
+- Playwright responsive checks cover idle, loading, success, and error at 1440–320 px widths.
