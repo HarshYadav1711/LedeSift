@@ -18,6 +18,16 @@ function isSummarizeResponse(value: unknown): value is SummarizeResponse {
   return record.ok === true || record.ok === false;
 }
 
+function platformRateLimited(status: number): ClientSummarizeResult {
+  return {
+    kind: "error",
+    code: "AI_RATE_LIMITED",
+    message: "The summarization service rate limit was reached. Try again later.",
+    retryable: true,
+    status,
+  };
+}
+
 /**
  * Browser client for POST /api/summarize.
  * Never receives or sends the Gemini API key.
@@ -55,6 +65,10 @@ export async function requestSummarize(
   try {
     payload = await response.json();
   } catch {
+    // Platform WAF may return empty or non-JSON 429 bodies.
+    if (response.status === 429) {
+      return platformRateLimited(response.status);
+    }
     return {
       kind: "error",
       code: "INTERNAL_ERROR",
@@ -65,6 +79,10 @@ export async function requestSummarize(
   }
 
   if (!isSummarizeResponse(payload)) {
+    // Vercel WAF fixed-window 429 shape is JSON but not SummarizeResponse.
+    if (response.status === 429) {
+      return platformRateLimited(response.status);
+    }
     return {
       kind: "error",
       code: "INTERNAL_ERROR",

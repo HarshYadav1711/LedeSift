@@ -24,7 +24,7 @@ Authorized numbering: Phase 1 retrieval · Phase 2 Gemini · Phase 3 API/UI · P
 | SEC-2 | SSRF / URL fetch protections | 1–4 | **Done** (adversarial Vitest) |
 | SEC-3 | Errors do not leak secrets | 1–4 | **Done** |
 | SEC-4 | Prompt/data isolation | 2–4 | **Done** (mocked adversarial; not universal model proof) |
-| SEC-5 | Platform rate limiting before public expose | 5 | Documented prerequisite + WAF proposal |
+| SEC-5 | Platform rate limiting before public expose | 5 | **Done on protected deploy** — WAF `ledesift-summarize-limit` active (public release still gated) |
 | DEP-1 | braces advisory (eslint, dev-only) | 0+ | Accepted baseline |
 
 ## Coverage notes

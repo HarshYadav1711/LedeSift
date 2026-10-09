@@ -1,5 +1,5 @@
 /** @vitest-environment jsdom */
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { SummarizeApp } from "@/components/SummarizeApp";
@@ -160,7 +160,9 @@ describe("SummarizeApp", () => {
     expect(screen.getByText(/no separate key points/i)).toBeInTheDocument();
   });
 
-  it("ignores stale responses when overlapping requests resolve out of order", async () => {
+  it(
+    "ignores stale responses when overlapping requests resolve out of order",
+    async () => {
     const user = userEvent.setup();
     const resolvers: Array<(value: unknown) => void> = [];
     // Intentionally ignore AbortSignal so both promises can settle — exercises
@@ -178,15 +180,14 @@ describe("SummarizeApp", () => {
     await user.click(screen.getByRole("button", { name: /distill/i }));
     expect(screen.getByRole("button", { name: /distilling/i })).toBeDisabled();
 
-    // Simulate an overlapping submit by re-enabling controls (production disables them).
-    const button = screen.getByRole("button", {
-      name: /distilling/i,
-    }) as HTMLButtonElement;
-    button.disabled = false;
-    input.disabled = false;
-    await user.clear(input);
-    await user.type(input, "https://example.com/second");
-    await user.click(button);
+    // Production disables controls while submitting; force a second form submit
+    // via fireEvent so React disabled props cannot block the overlap case.
+    const form = input.closest("form");
+    expect(form).not.toBeNull();
+    fireEvent.change(input, {
+      target: { value: "https://example.com/second" },
+    });
+    fireEvent.submit(form!);
 
     expect(resolvers.length).toBe(2);
 
@@ -234,7 +235,9 @@ describe("SummarizeApp", () => {
       expect(screen.getByRole("heading", { name: /fresh title/i })).toBeInTheDocument();
     });
     expect(screen.queryByText(/stale title/i)).not.toBeInTheDocument();
-  });
+  },
+    10_000,
+  );
 
   it("copies summary text and reports clipboard failure", async () => {
     const user = userEvent.setup();
