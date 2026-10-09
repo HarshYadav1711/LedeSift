@@ -16,7 +16,13 @@ Phase 1 pipeline (implemented)
     │  fetchHtmlSafely (SSRF-safe, pinned address)
     │  extractMainContent (Readability + jsdom)
     ▼
-ExtractedPage → (Phase 3) Gemini → summary JSON
+ExtractedPage
+    │
+Phase 2 pipeline (implemented)
+    │  budgetModelInput
+    │  summarizeExtractedPage (@google/genai / gemini-2.5-flash-lite)
+    ▼
+SummarizationResult (Zod-validated)
 ```
 
 ## Boundaries
@@ -27,7 +33,7 @@ ExtractedPage → (Phase 3) Gemini → summary JSON
 | API route | Validate, fetch, extract, summarize, map errors | Trust client-supplied HTML as already-safe |
 | Retrieval (`src/lib/fetch-html.ts`) | SSRF-safe HTML download | Execute scripts; follow unchecked redirects |
 | Extraction (`src/lib/extract.ts`) | HTML → `ExtractedPage` | Call AI; perform network I/O |
-| AI module | Text → summary string | Fetch URLs; expose raw SDK errors to clients |
+| AI (`src/lib/ai`) | `ExtractedPage` → validated summary | Fetch pages; trust model JSON without Zod; expose secrets |
 
 ## Implemented modules (Phase 1)
 
@@ -42,7 +48,19 @@ ExtractedPage → (Phase 3) Gemini → summary JSON
 | `src/lib/types.ts` | `ExtractedPage` contract |
 | `src/lib/limits.ts` | Timeouts and size bounds |
 
-No public HTTP scrape/summarize route is exposed in Phase 1.
+No public HTTP scrape/summarize route is exposed in Phase 1–2.
+
+## Implemented modules (Phase 2)
+
+| Module | Role |
+| --- | --- |
+| `src/lib/ai/prompt.ts` | Trusted system instruction + delimited untrusted extract |
+| `src/lib/ai/budget.ts` | Deterministic model-input truncation |
+| `src/lib/ai/schemas.ts` | Zod `AISummary` / `SummarizationResult` |
+| `src/lib/ai/gemini.ts` | Official SDK provider + error mapping + timeout helper |
+| `src/lib/ai/summarize.ts` | Orchestration: budget → prompt → generate → validate |
+
+SDK: `@google/genai@2.28.0` · Model: `gemini-2.5-flash-lite` (override via `GEMINI_MODEL`)
 
 ## Extraction contract
 
@@ -89,25 +107,32 @@ type ExtractedPage = {
 
 ## Error categories
 
-`INVALID_URL` · `UNSAFE_URL` · `DNS_ERROR` · `FETCH_TIMEOUT` · `HTTP_ERROR` · `UNSUPPORTED_CONTENT` · `RESPONSE_TOO_LARGE` · `EXTRACTION_FAILED` · `INSUFFICIENT_CONTENT`
+Retrieval/extraction: `INVALID_URL` · `UNSAFE_URL` · `DNS_ERROR` · `FETCH_TIMEOUT` · `HTTP_ERROR` · `UNSUPPORTED_CONTENT` · `RESPONSE_TOO_LARGE` · `EXTRACTION_FAILED` · `INSUFFICIENT_CONTENT`
+
+Summarization: `MISSING_API_CONFIG` · `AI_INPUT_INVALID` · `AI_INPUT_TOO_LARGE` · `AI_AUTH_FAILED` · `AI_MODEL_UNAVAILABLE` · `AI_RATE_LIMITED` · `AI_TIMEOUT` · `AI_NETWORK_ERROR` · `AI_SAFETY_BLOCKED` · `AI_INVALID_OUTPUT` · `AI_PROVIDER_ERROR`
 
 User-facing messages are stable and non-leaking. Optional `diagnostic` fields are for development logs only.
 
-## AI boundary (later)
+## AI boundary (Phase 2)
 
-- Input: extracted plain text (already bounded) plus optional title.
-- Output: summary string.
-- Model: **Gemini 2.5 Flash-Lite** via the official maintained SDK.
-- API key: server env `GEMINI_API_KEY` only.
+- Input: Phase 1 `ExtractedPage` (title + text + factual source metadata).
+- Model input budget: **12_000** characters with paragraph/sentence-aware truncation; `inputTruncated` reported separately from `extractionTruncated`.
+- Output: Zod-validated `{ summary, keyPoints }` merged with Phase 1 source metadata into `SummarizationResult`.
+- Structured output via SDK `responseMimeType: application/json` + `responseSchema`; still re-validated with Zod.
+- Prompt isolation: trusted `systemInstruction` never includes scraped text; extract is wrapped in explicit untrusted markers in the user content.
+- Timeout: ~20s application abort. **AbortSignal is client-only** — provider-side work/quota may still occur after cancel.
+- Retries: none for quota/auth failures; no uncontrolled retry loops.
+- API key: server env `GEMINI_API_KEY` only (optional `GEMINI_MODEL`).
 
 ## Security protections
 
 1. **Secret hygiene** — no `NEXT_PUBLIC_` for keys; `.env*` gitignored except `.env.example`.
-2. **Input validation** — Zod for string bounds; WHATWG URL parsing for structure.
+2. **Input validation** — Zod for string bounds; WHATWG URL parsing for structure; Zod for model JSON.
 3. **SSRF controls** — as above.
-4. **Error mapping** — stable codes; no stack traces in user messages.
-5. **Dependency surface** — approved libraries only; no scraping browsers.
-6. **Deployment** — secrets via Vercel env configuration, not committed files.
+4. **Prompt injection resistance** — extract treated as data; system instructions forbid following embedded commands.
+5. **Error mapping** — stable codes; diagnostics redact API keys; no stack traces in user messages.
+6. **Dependency surface** — approved libraries only; no scraping browsers; single AI provider.
+7. **Deployment** — secrets via Vercel env configuration, not committed files.
 
 ## Runtime and hosting
 
@@ -117,7 +142,7 @@ User-facing messages are stable and non-leaking. Optional `diagnostic` fields ar
 
 ## Testing architecture
 
-- **Vitest** — URL/IP policy, fetch with injected resolver/transport, extraction fixtures.
+- **Vitest** — URL/IP policy, fetch fakes, extraction fixtures, AI provider injection, opt-in live smoke.
 - **Playwright** — later phase for browser flows.
 
 ## Explicit non-architecture
