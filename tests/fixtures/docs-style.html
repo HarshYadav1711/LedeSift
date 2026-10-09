@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>HTTP Caching Overview</title>
+  </head>
+  <body>
+    <nav>
+      <ul>
+        <li><a href="/docs">Docs</a></li>
+        <li><a href="/api">API</a></li>
+        <li><a href="/guides">Guides</a></li>
+        <li><a href="/blog">Blog</a></li>
+        <li><a href="/support">Support</a></li>
+      </ul>
+    </nav>
+    <main>
+      <h1>HTTP Caching Overview</h1>
+      <p>
+        Caches store responses so subsequent requests can avoid repeating work.
+        Fresh responses may be reused without contacting the origin, while stale
+        responses can be revalidated with conditional requests.
+      </p>
+      <p>
+        Cache-Control directives such as max-age, no-store, and must-revalidate
+        communicate reuse policy. Shared caches must respect private responses
+        and authorization-sensitive content.
+      </p>
+      <p>
+        Validators like ETag and Last-Modified allow efficient confirmation that
+        a cached copy is still current. When validation fails, the origin returns
+        a full representation for replacement in the cache.
+      </p>
+    </main>
+  </body>
+</html>

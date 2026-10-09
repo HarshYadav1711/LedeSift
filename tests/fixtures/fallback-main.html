@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Fallback Main Landmark</title>
+  </head>
+  <body>
+    <!--
+      Sparse markup that often defeats Readability scoring, while <main>
+      still contains a usable article body for the fallback path.
+    -->
+    <div>
+      <span>chrome</span>
+      <span>toolbar</span>
+      <span>widget</span>
+    </div>
+    <main id="content">
+      <h1>Fallback Main Landmark</h1>
+      <p>
+        This page keeps the primary explanation inside a main landmark rather
+        than a classic article node with rich metadata. Extraction should still
+        recover several sentences describing how operators calibrated sensors
+        before the outdoor trial began at dawn.
+      </p>
+      <p>
+        Calibration notebooks list voltage offsets, humidity corrections, and
+        the serial numbers of spare probes packed for the trip. The narrative is
+        intentionally plain so readability heuristics may abstain.
+      </p>
+      <p>
+        After the trial, teams compared handwritten logs with automated samples
+        and confirmed that the main landmark text alone is sufficient for a
+        concise downstream summary workflow.
+      </p>
+    </main>
+  </body>
+</html>

@@ -6,9 +6,13 @@ Work proceeds phase by phase. **Do not start a phase until explicitly authorized
 
 Assignment > user decisions > rules > PRD > architecture > design > **this file** > phase prompt.
 
+## Phase numbering note
+
+An earlier draft listed Phase 1 as UI and Phase 2 as fetch/extraction. The authorized Phase 1 prompt remapped delivery so that **secure retrieval and extraction land before UI and Gemini**. This file follows that explicit decision.
+
 ## Phase 0 — Foundation and Context Lock
 
-**Status:** Complete (awaiting user commit authorization).
+**Status:** Complete (`f29c3a7`).
 
 **Scope**
 
@@ -18,45 +22,47 @@ Assignment > user decisions > rules > PRD > architecture > design > **this file*
 - Minimal scaffold only (design tokens / branded shell allowed).
 - No scraping, model calls, result generation, or unapproved features.
 
+**Exit:** Context locked.
+
+---
+
+## Phase 1 — Secure webpage retrieval and content extraction
+
+**Status:** Complete (awaiting user commit authorization).
+
+**Scope**
+
+- URL validation (absolute HTTP/HTTPS, standard ports, no userinfo).
+- SSRF-safe HTML fetch with connection-time address pinning.
+- Mozilla Readability + jsdom extraction with fallback and limits.
+- Typed `ExtractedPage` contract and controlled error categories.
+- Vitest coverage with fixtures and transport/DNS fakes.
+- No Gemini, no public scrape API route, no UI expansion.
+
 **Validation**
 
-- Dependency installation
-- TypeScript check
-- ESLint
-- Production build
-- Git diff inspection
-- Secret/configuration hygiene review
+- `npx tsc --noEmit`
+- `npm run lint`
+- `npm run build`
+- `npm test`
+- `npm audit --omit=dev` / `npm audit`
+- Git hygiene inspection
 
-**Exit:** Context locked; wait for Phase 1 authorization. No auto-commit.
+**Exit:** Wait for authorization before Phase 2. No auto-commit.
 
 ---
 
-## Phase 1 — UI shell and client contract
+## Phase 2 — UI shell and API wiring (planned)
 
 **Scope (planned)**
 
-- Primary page: brand, tagline, URL form, loading and error regions, summary region.
-- Client calls `POST /api/summarize` with the agreed JSON shape (handler may still be a stub or return structured “not implemented” only if authorized—prefer wiring UI against real contract as phases allow).
+- Primary page: brand, tagline, URL form, loading/error/summary regions.
+- Route Handler that calls the Phase 1 retrieval pipeline (still no Gemini, or stub only if explicitly authorized).
 - Accessibility and responsive behavior per Design.md.
 
-**Validation (planned):** lint, typecheck, build; manual UI review; no invented screenshots.
-
 ---
 
-## Phase 2 — Fetch and extraction
-
-**Scope (planned)**
-
-- Install Readability + jsdom when needed.
-- SSRF-aware fetch, HTML size/time limits.
-- Extraction module returning title/text or typed failure.
-- Integrate into summarize route (AI may still be stubbed until Phase 3 if split).
-
-**Validation (planned):** unit tests on fixtures; real fetch against a basic public HTML page where safe.
-
----
-
-## Phase 3 — Gemini summarization
+## Phase 3 — Gemini summarization (planned)
 
 **Scope (planned)**
 
@@ -65,31 +71,24 @@ Assignment > user decisions > rules > PRD > architecture > design > **this file*
 - Map model failures to API error codes.
 - End-to-end summarize path with a real API response.
 
-**Validation (planned):** real local summarize against a basic page; no fabricated responses.
-
 ---
 
-## Phase 4 — Hardening, tests, and docs polish
+## Phase 4 — Hardening, browser tests, and docs polish (planned)
 
 **Scope (planned)**
 
-- Vitest coverage for validation/extraction/error mapping.
 - Playwright happy-path and error-path browser checks.
 - README finalization; known limitations accurate.
 
-**Validation (planned):** full test suite green locally with genuine results.
-
 ---
 
-## Phase 5 — Deploy and verify
+## Phase 5 — Deploy and verify (planned)
 
 **Scope (planned)**
 
 - Vercel deployment with env configured by the user.
 - Verify production with a real API response.
 - Public GitHub repository readiness (user-driven push/commit).
-
-**Validation (planned):** live URL returns a real summary; hygiene re-check.
 
 ---
 

@@ -4,15 +4,16 @@
 
 LedeSift is a public Next.js application that accepts a webpage URL, extracts the main text from basic public HTML, and summarizes it with Gemini 2.5 Flash-Lite.
 
-> **Status:** Phase 0 foundation complete. URL summarization is not implemented yet. Follow `docs/phases.md` for delivery order.
+> **Status:** Phase 1 retrieval/extraction libraries are implemented and tested. UI wiring, public API route, and Gemini summarization are not implemented yet. Follow `docs/phases.md`.
 
 ## Stack
 
 - Next.js App Router (React, TypeScript, Tailwind CSS)
 - Node.js Route Handlers (planned API)
-- Mozilla Readability + jsdom (planned extraction)
+- Mozilla Readability + jsdom (Phase 1 extraction)
+- Zod + `ipaddr.js` (URL/IP policy)
 - Gemini 2.5 Flash-Lite via official SDK (planned)
-- Zod, Vitest, Playwright (planned when needed)
+- Vitest (unit/integration); Playwright (planned)
 - Deploy target: Vercel
 
 ## Prerequisites
@@ -30,7 +31,7 @@ npm install
 cp .env.example .env.local
 ```
 
-Edit `.env.local` and set:
+Edit `.env.local` and set (later phase):
 
 ```bash
 GEMINI_API_KEY=your_api_key_here
@@ -45,16 +46,40 @@ npm run dev      # local development server
 npm run build    # production build
 npm run start    # run production build
 npm run lint     # ESLint
+npm test         # Vitest (retrieval/extraction)
 npx tsc --noEmit # TypeScript check
 ```
 
-Vitest and Playwright scripts will be added when those tools are introduced.
+## Phase 1 library surface
+
+Server-side modules under `src/lib/`:
+
+- `validatePublicHttpUrl` — absolute public HTTP(S) URL policy
+- `fetchHtmlSafely` — SSRF-aware HTML download with pinned destination addresses
+- `extractMainContent` — Readability + fallback → `ExtractedPage`
+- `retrieveAndExtract` — compose validate → fetch → extract
+
+These are **not** exposed as a public HTTP endpoint yet.
+
+### Limits
+
+| Concern | Value |
+| --- | --- |
+| Timeout | ~12 seconds overall |
+| Redirects | max 3 (each re-validated) |
+| Download | ~2 MiB HTML |
+| Extracted text | max 50_000 characters |
+| Minimum content | 30 words and 120 characters |
+
+### Error codes
+
+`INVALID_URL`, `UNSAFE_URL`, `DNS_ERROR`, `FETCH_TIMEOUT`, `HTTP_ERROR`, `UNSUPPORTED_CONTENT`, `RESPONSE_TOO_LARGE`, `EXTRACTION_FAILED`, `INSUFFICIENT_CONTENT`
 
 ## Environment variables
 
 | Variable | Where | Purpose |
 | --- | --- | --- |
-| `GEMINI_API_KEY` | Server only (`.env.local` / Vercel env) | Gemini API access |
+| `GEMINI_API_KEY` | Server only (`.env.local` / Vercel env) | Gemini API access (later) |
 
 See `.env.example` for placeholders.
 
@@ -82,9 +107,11 @@ Authority order: Assignment > user decisions > rules > PRD > architecture > desi
 ## Known limitations
 
 - Targets basic public HTML pages; JavaScript-rendered or paywalled pages may fail.
-- Free-tier model quotas and latency apply.
+- Free-tier model quotas and latency apply (when Gemini is added).
 - No accounts, history, or database.
 - Scraping via browser automation is intentionally out of scope.
+- Phase 1 has no public scrape endpoint; libraries are for server-side use.
+- Dev-only `braces` advisory via `eslint-config-next` remains an accepted Phase 0 baseline until upstream patches.
 
 ## License
 

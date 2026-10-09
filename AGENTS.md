@@ -42,11 +42,11 @@ Database, authentication, browser automation for scraping, Redis, microservices,
 | Framework | Next.js App Router |
 | UI | React + TypeScript + Tailwind CSS |
 | API | Next.js Node.js Route Handlers |
-| Extraction | Mozilla Readability + jsdom (Phase 2+) |
-| AI | Gemini 2.5 Flash-Lite via official maintained SDK (Phase 3+) |
-| Validation | Zod (when request contracts land) |
-| Unit/integration tests | Vitest (when test phase lands) |
-| Browser tests | Playwright (when E2E phase lands) |
+| Extraction | Mozilla Readability + jsdom (Phase 1 libraries) |
+| AI | Gemini 2.5 Flash-Lite via official maintained SDK (later phase) |
+| Validation | Zod (URL input; API contracts later) |
+| Unit/integration tests | Vitest (Phase 1+) |
+| Browser tests | Playwright (later phase) |
 | Deploy | Vercel |
 
 ## Working method
@@ -71,4 +71,4 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 ## Phase gate
 
-Current authorized work: **Phase 0 — Foundation and Context Lock** (scaffold + governance docs only). Do not begin Phase 1 until explicitly authorized.
+Current authorized work: **Phase 1 — Secure webpage retrieval and content extraction**. Do not begin Phase 2 until explicitly authorized.
