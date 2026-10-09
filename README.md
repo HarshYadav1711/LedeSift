@@ -2,25 +2,18 @@
 
 **The page, distilled.**
 
-LedeSift is a public Next.js application that accepts a webpage URL, extracts the main text from basic public HTML, and summarizes it with Gemini 2.5 Flash-Lite.
+LedeSift accepts a public webpage URL, extracts the main readable text, and returns a concise Gemini summary with key takeaways.
 
-> **Status:** Phase 2 summarization libraries are implemented and tested. Public API route and UI wiring are not implemented yet. Follow `docs/phases.md`.
+> **Status:** Phase 3 full-stack API + editorial UI are implemented for local use. Deployment / production verification are not complete. Follow `docs/phases.md`.
 
 ## Stack
 
 - Next.js App Router (React, TypeScript, Tailwind CSS)
-- Node.js Route Handlers (planned API)
-- Mozilla Readability + jsdom (Phase 1 extraction)
-- Zod + `ipaddr.js` (URL/IP policy)
-- `@google/genai` + `gemini-2.5-flash-lite` (Phase 2 summarization)
-- Vitest (unit/integration); Playwright (planned)
-- Deploy target: Vercel
-
-## Prerequisites
-
-- Node.js 20+ recommended
-- npm 10+
-- A Google AI / Gemini API key on the free tier (for live summarization)
+- `POST /api/summarize` Node.js Route Handler
+- Mozilla Readability + jsdom
+- `@google/genai` + `gemini-2.5-flash-lite`
+- Zod + Vitest
+- Deploy target: Vercel (not verified in Phase 3)
 
 ## Setup
 
@@ -31,73 +24,86 @@ npm install
 cp .env.example .env.local
 ```
 
-Edit `.env.local`:
+Configure `.env.local`:
 
 ```bash
 GEMINI_API_KEY=your_api_key_here
 GEMINI_MODEL=gemini-2.5-flash-lite
 ```
 
-Never commit `.env.local` or real keys. Never expose the key to the browser (`NEXT_PUBLIC_` is forbidden for secrets).
+Never commit real keys. Never use `NEXT_PUBLIC_` for secrets.
 
 ## Scripts
 
 ```bash
-npm run dev           # local development server
-npm run build         # production build
-npm run start         # run production build
-npm run lint          # ESLint
-npm test              # Vitest (deterministic; no live Gemini by default)
-npm run smoke:summarize  # opt-in live Gemini smoke (requires .env.local)
-npx tsc --noEmit      # TypeScript check
+npm run dev              # local UI + API
+npm run build
+npm run start
+npm run lint
+npm test                 # deterministic suite (live smokes stay skipped)
+npm run smoke:summarize  # Phase 2 live Gemini library smoke
+npm run smoke:fullstack  # Phase 3 live retrieve + summarize API smoke
+npx tsc --noEmit
 ```
 
-## Library surfaces
+## API contract
 
-### Phase 1 — retrieval/extraction
+`POST /api/summarize`
+Content-Type: `application/json`
+Body limit: ~4 KiB
+Body: `{ "url": "https://example.com/article" }`
 
-- `validatePublicHttpUrl`, `fetchHtmlSafely`, `extractMainContent`, `retrieveAndExtract`
+**Success `200`**
 
-### Phase 2 — summarization
+```json
+{
+  "ok": true,
+  "data": {
+    "source": {
+      "requestedUrl": "…",
+      "finalUrl": "…",
+      "title": "…",
+      "wordCount": 123,
+      "extractionMethod": "readability"
+    },
+    "summary": "…",
+    "keyPoints": ["…"],
+    "coverage": {
+      "extractionTruncated": false,
+      "inputTruncated": false
+    },
+    "sourcePreview": "…"
+  }
+}
+```
 
-- `summarizeExtractedPage(extractedPage)` → `SummarizationResult`
-- Uses structured JSON (`summary`, `keyPoints`) validated with Zod
-- Trusted system instructions are isolated from untrusted webpage extract text
-- Model input budget: 12_000 characters (paragraph/sentence-aware truncation)
-- Application timeout: ~20s; `maxOutputTokens`: 512
-- AbortSignal cancellation is **client-side only**; provider work/quota may still occur after abort
+**Failure**
 
-These modules are **not** exposed as a public HTTP endpoint yet.
+```json
+{
+  "ok": false,
+  "error": {
+    "code": "INVALID_URL",
+    "message": "…",
+    "retryable": false
+  }
+}
+```
 
-## Environment variables
+Responses use `Cache-Control: no-store`. Same-origin browser use is intended; there is no wildcard CORS.
 
-| Variable | Where | Purpose |
-| --- | --- | --- |
-| `GEMINI_API_KEY` | Server only | Gemini API access |
-| `GEMINI_MODEL` | Server only | Defaults to `gemini-2.5-flash-lite` |
+### Production exposure prerequisite
 
-## Project docs
-
-| Document | Role |
-| --- | --- |
-| [AGENTS.md](./AGENTS.md) | Agent operating instructions |
-| [docs/rules.md](./docs/rules.md) | Engineering rules |
-| [docs/PRD.md](./docs/PRD.md) | Product requirements and user journey |
-| [docs/Architecture.md](./docs/Architecture.md) | System design and security boundaries |
-| [docs/Design.md](./docs/Design.md) | Visual and UX direction |
-| [docs/phases.md](./docs/phases.md) | Phased delivery plan |
-| [docs/REQUIREMENTS_MATRIX.md](./docs/REQUIREMENTS_MATRIX.md) | Requirements coverage |
-
-Authority order: Assignment > user decisions > rules > PRD > architecture > design > phases > phase prompt.
+Before exposing this endpoint publicly on Vercel, configure platform-level rate limiting / bot protection. This repository does not implement distributed rate limiting.
 
 ## Known limitations
 
-- Targets basic public HTML pages; JavaScript-rendered or paywalled pages may fail.
-- Long pages are truncated for the model input budget; `inputTruncated` reports this honestly.
-- Summaries are generated from extracted text only and are not independently verified.
-- Free-tier model quotas and latency apply.
-- No accounts, history, database, or public scrape/summarize HTTP route yet.
-- Dev-only `braces` advisory via `eslint-config-next` remains an accepted baseline until upstream patches.
+- Best-effort on basic public HTML; JS-rendered / paywalled pages may fail.
+- Summaries are not independently verified.
+- Model and extraction truncation are reported via coverage flags.
+- Browser abort cancels only the browser request; Gemini work may still continue.
+- Dev-only `braces` eslint advisory remains the accepted baseline.
+- Live network smoke tests are opt-in and skipped under default `npm test`.
 
 ## License
 

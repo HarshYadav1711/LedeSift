@@ -8,13 +8,10 @@ Assignment > user decisions > rules > PRD > architecture > design > **this file*
 
 ## Phase numbering note
 
-Authorized prompts remapped delivery:
-
 1. Phase 1 = secure retrieval/extraction
 2. Phase 2 = Gemini summarization engine
-3. Later = UI / public API / deploy
-
-This file follows those explicit decisions.
+3. Phase 3 = public API + editorial UI
+4. Later = hardening / deploy
 
 ## Phase 0 — Foundation and Context Lock
 
@@ -26,39 +23,37 @@ This file follows those explicit decisions.
 
 ## Phase 2 — Reliable AI summarization engine
 
+**Status:** Complete (`3eaa4f7`).
+
+## Phase 3 — Full-stack API and editorial interface
+
 **Status:** Complete (awaiting user commit authorization).
 
 **Scope**
 
-- Official `@google/genai` SDK with `gemini-2.5-flash-lite`.
-- Consume Phase 1 `ExtractedPage`; return validated `SummarizationResult`.
-- Input budgeting, structured JSON schema, prompt/data isolation.
-- Provider error mapping, timeouts, deterministic mocked tests.
-- Optional live smoke via `npm run smoke:summarize`.
-- No public API route, no UI, no deployment.
+- `POST /api/summarize` Node.js Route Handler
+- Request validation (~4 KiB JSON), Phase 1 + Phase 2 orchestration
+- Editorial homepage: URL form, loading/error/success, copy, source preview
+- Deterministic API + frontend tests; opt-in live full-stack smoke
+- No deploy, auth, database, or rate-limit SaaS
 
 **Validation**
 
 - `npx tsc --noEmit`, `npm run lint`, `npm run build`, `npm test`
-- `npm audit --omit=dev` / `npm audit`
-- Live smoke when a real key is present
+- `npm run smoke:fullstack` when a real Gemini key is available
+- Audit comparison vs Phase 2 baseline
 
-**Exit:** Wait for authorization before Phase 3. No auto-commit.
-
-## Phase 3 — UI shell and API wiring (planned)
-
-**Scope (planned)**
-
-- Primary page: brand, tagline, URL form, loading/error/summary regions.
-- `POST /api/summarize` Route Handler calling retrieve → extract → summarize.
-- Accessibility and responsive behavior per Design.md.
+**Exit:** Wait for authorization before Phase 4. No auto-commit.
 
 ## Phase 4 — Hardening, browser tests, and docs polish (planned)
 
 ## Phase 5 — Deploy and verify (planned)
 
+### Deployment security prerequisite
+
+Before exposing `/api/summarize` publicly on Vercel, configure **platform-level rate limiting / WAF / bot protection**. This app does not claim distributed in-memory rate limiting.
+
 ## Global phase rules
 
 - No push/deploy/commit unless the user explicitly asks.
-- No phase-specific dependencies early.
 - Record real commands and outcomes in the phase report.

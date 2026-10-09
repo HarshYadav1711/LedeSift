@@ -5,24 +5,16 @@
 LedeSift is a single Next.js application. The browser will collect a URL; a Node.js Route Handler will perform fetch, extraction, and AI summarization. There is no separate backend service, database, or queue.
 
 ```
-Browser (App Router UI)          [later phase]
+Browser (App Router UI)          [Phase 3]
     │  POST /api/summarize { url }
     ▼
-Route Handler (Node.js runtime)  [later phase]
-    │
+Route Handler (nodejs runtime)   [Phase 3]
+    │  parse JSON (~4 KiB) + Phase 1 URL validate
+    │  orchestrateSummarize()
     ▼
-Phase 1 pipeline (implemented)
-    │  validatePublicHttpUrl
-    │  fetchHtmlSafely (SSRF-safe, pinned address)
-    │  extractMainContent (Readability + jsdom)
+Phase 1 retrieve/extract → Phase 2 summarize
     ▼
-ExtractedPage
-    │
-Phase 2 pipeline (implemented)
-    │  budgetModelInput
-    │  summarizeExtractedPage (@google/genai / gemini-2.5-flash-lite)
-    ▼
-SummarizationResult (Zod-validated)
+SummarizeSuccess JSON (bounded sourcePreview, coverage flags)
 ```
 
 ## Boundaries
@@ -48,7 +40,23 @@ SummarizationResult (Zod-validated)
 | `src/lib/types.ts` | `ExtractedPage` contract |
 | `src/lib/limits.ts` | Timeouts and size bounds |
 
-No public HTTP scrape/summarize route is exposed in Phase 1–2.
+## Implemented modules (Phase 3)
+
+| Module | Role |
+| --- | --- |
+| `src/app/api/summarize/route.ts` | `POST` only, `runtime = "nodejs"` |
+| `src/lib/api/parse-request.ts` | Content-type + body-size + Zod request |
+| `src/lib/api/orchestrate.ts` | Direct library orchestration (injectable) |
+| `src/lib/api/handler.ts` | Shared handler + error envelope |
+| `src/lib/api/map-error.ts` | HTTP status + retryable mapping |
+| `src/lib/api/preview.ts` | Bounded Unicode-safe source preview |
+| `src/components/*` | Editorial form, result, preview, feedback |
+
+Request body limit: **4 KiB** (measured from actual body bytes, not Content-Length alone).
+Source preview: **≤ 1,500** characters from extracted text.
+Cache: `no-store`. No wildcard CORS.
+
+**Production prerequisite:** platform-level rate limiting before public exposure. This app does not implement distributed in-memory rate limiting.
 
 ## Implemented modules (Phase 2)
 
@@ -89,7 +97,7 @@ type ExtractedPage = {
 
 1. **Validate URL syntax and policy before any network I/O.**
 2. **Resolve DNS (or accept a literal), keep only public addresses.**
-3. **Pin the outbound connection** with a custom `lookup` that returns only the validated address (Node `http`/`https`), preserving original hostname for `Host`, TLS SNI, and certificate verification.
+3. **Pin the outbound connection** with a custom `lookup` that returns only the validated address (Node `http`/`https`), preserving original hostname for `Host`, TLS SNI, and certificate verification. The lookup supports both `(address, family)` and `{ all: true }` Node callback shapes (Phase 3 regression fix).
 4. **Never disable TLS verification** (`rejectUnauthorized: true`).
 5. **Do not auto-follow redirects.** Each `Location` is resolved, re-validated, and re-pinned. Max **3** redirects.
 6. **Overall timeout ~12s**; body cap **~2 MiB**; unsupported non-HTML content types rejected.

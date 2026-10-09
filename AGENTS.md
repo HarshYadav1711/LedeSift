@@ -41,7 +41,7 @@ Database, authentication, browser automation for scraping, Redis, microservices,
 | --- | --- |
 | Framework | Next.js App Router |
 | UI | React + TypeScript + Tailwind CSS |
-| API | Next.js Node.js Route Handlers |
+| API | Next.js Node.js Route Handlers (`POST /api/summarize`) |
 | Extraction | Mozilla Readability + jsdom (Phase 1 libraries) |
 | AI | Gemini 2.5 Flash-Lite via `@google/genai` (Phase 2 libraries) |
 | Validation | Zod (URL input + AI output; HTTP API later) |
@@ -71,4 +71,4 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 ## Phase gate
 
-Current authorized work: **Phase 2 — Reliable AI summarization engine**. Do not begin Phase 3 until explicitly authorized.
+Current authorized work: **Phase 3 — Full-stack API and editorial interface**. Do not begin Phase 4 until explicitly authorized.

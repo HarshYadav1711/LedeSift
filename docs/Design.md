@@ -46,8 +46,11 @@ CSS variables in `src/app/globals.css` are the source of truth for implementatio
 
 Generic AI SaaS templates, gradient mesh backgrounds, glassmorphism, decorative glow, heavy multi-layer shadows, fake analytics, nonfunctional chrome, emoji ornamentation.
 
-## Phase 0 UI baseline
+## Phase 3 UI
 
-- Design tokens applied globally.
-- Minimal branded shell (name + tagline + placeholder note that summarization arrives in later phases).
-- Full URL form and result UI land in the UI/API phases—not Phase 0 feature scope.
+- Header wordmark + tagline; no fake navigation.
+- Headline: “The internet is loud. Find the point.”
+- Primary action: “Distill this page”.
+- Results: title, domain, summary, key takeaways count, partial-coverage notice, copy, open source, collapsible text preview.
+- Responsive single-column reading layout from ~320px upward.
+- Focus rings use accent/ink; reduced-motion respected.

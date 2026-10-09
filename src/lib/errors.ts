@@ -24,6 +24,11 @@ export const ERROR_CODES = [
   "AI_SAFETY_BLOCKED",
   "AI_INVALID_OUTPUT",
   "AI_PROVIDER_ERROR",
+  "MALFORMED_REQUEST",
+  "UNSUPPORTED_MEDIA_TYPE",
+  "REQUEST_TOO_LARGE",
+  "METHOD_NOT_ALLOWED",
+  "INTERNAL_ERROR",
 ] as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[number];
@@ -49,6 +54,11 @@ const DEFAULT_MESSAGES: Record<ErrorCode, string> = {
   AI_SAFETY_BLOCKED: "The model declined to summarize this content.",
   AI_INVALID_OUTPUT: "The summarization service returned an invalid response.",
   AI_PROVIDER_ERROR: "The summarization service failed.",
+  MALFORMED_REQUEST: "The request body is missing or invalid.",
+  UNSUPPORTED_MEDIA_TYPE: "Requests must use application/json.",
+  REQUEST_TOO_LARGE: "The request body exceeds the allowed size.",
+  METHOD_NOT_ALLOWED: "This HTTP method is not supported.",
+  INTERNAL_ERROR: "An unexpected error occurred.",
 };
 
 export class RetrievalError extends Error {

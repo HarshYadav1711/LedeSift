@@ -116,19 +116,32 @@ function defaultResolveAddresses(hostname: string): Promise<ResolvedAddress[]> {
     });
 }
 
-function pinnedLookup(pinned: ResolvedAddress): LookupFunction {
+/**
+ * Custom DNS lookup that always returns a pre-validated public address.
+ * Supports both Node callback shapes: (err, address, family) and
+ * (err, addresses[]) when `options.all` is true.
+ */
+export function createPinnedLookup(pinned: ResolvedAddress): LookupFunction {
   return ((_hostname, options, callback) => {
+    const opts = typeof options === "function" ? undefined : options;
     const cb =
       typeof options === "function"
         ? options
         : (callback as (
             err: NodeJS.ErrnoException | null,
-            address: string,
-            family: number,
+            address: string | Array<{ address: string; family: number }>,
+            family?: number,
           ) => void);
 
     // Always connect to the pre-validated public address (anti DNS-rebinding).
+    // Node's HTTP stack may call lookup with `{ all: true }`, which expects an
+    // address array rather than (address, family) — returning the wrong shape
+    // yields "Invalid IP address: undefined" on real connections.
     queueMicrotask(() => {
+      if (opts && typeof opts === "object" && opts.all) {
+        cb(null, [{ address: pinned.address, family: pinned.family }]);
+        return;
+      }
       cb(null, pinned.address, pinned.family);
     });
   }) as LookupFunction;
@@ -303,7 +316,7 @@ const defaultTransportRequest: TransportRequest = async ({
         path: `${url.pathname}${url.search}`,
         method: "GET",
         headers,
-        lookup: pinnedLookup(pinned),
+        lookup: createPinnedLookup(pinned),
         servername: isHttps ? url.hostname : undefined,
         // Never disable certificate verification.
         rejectUnauthorized: true,

@@ -287,4 +287,51 @@ describe("fetchHtmlSafely", () => {
   it("documents the configured download ceiling", () => {
     expect(MAX_HTML_BYTES).toBe(2 * 1024 * 1024);
   });
+
+});
+
+describe("createPinnedLookup", () => {
+  it("returns a single address for the classic callback shape", async () => {
+    const { createPinnedLookup } = await import("@/lib/fetch-html");
+    const lookup = createPinnedLookup({ address: "8.8.8.8", family: 4 });
+
+    const result = await new Promise<{
+      address: string;
+      family: number;
+    }>((resolve, reject) => {
+      lookup("example.com", { family: 0 }, (err, address, family) => {
+        if (err) {
+          reject(err);
+          return;
+        }
+        resolve({
+          address: address as string,
+          family: family as number,
+        });
+      });
+    });
+
+    expect(result).toEqual({ address: "8.8.8.8", family: 4 });
+  });
+
+  it("returns an address array when options.all is true", async () => {
+    const { createPinnedLookup } = await import("@/lib/fetch-html");
+    const lookup = createPinnedLookup({ address: "1.1.1.1", family: 4 });
+
+    const result = await new Promise<Array<{ address: string; family: number }>>(
+      (resolve, reject) => {
+        lookup("example.com", { all: true }, (err, addresses) => {
+          if (err) {
+            reject(err);
+            return;
+          }
+          resolve(
+            addresses as Array<{ address: string; family: number }>,
+          );
+        });
+      },
+    );
+
+    expect(result).toEqual([{ address: "1.1.1.1", family: 4 }]);
+  });
 });
