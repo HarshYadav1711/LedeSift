@@ -71,4 +71,4 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 ## Phase gate
 
-Current authorized work: **Phase 5 — Secure production deployment and final submission**. Protected-deployment stage complete; **do not start public release** until explicitly authorized.
+Current authorized work: **Phase 5 — Secure production deployment and final submission**. Public Standard Protection release verified in Phase 5D; final documentation commit/push + post-commit deploy SHA check remain manual.
