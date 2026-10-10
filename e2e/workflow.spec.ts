@@ -253,7 +253,7 @@ test.describe("LedeSift browser workflow (mocked API)", () => {
           429,
           errorPayload(
             "AI_RATE_LIMITED",
-            "The summarization service rate limit was reached. Try again later.",
+            "Too many requests. Please wait a moment and try again.",
             false,
           ),
         );
@@ -270,8 +270,8 @@ test.describe("LedeSift browser workflow (mocked API)", () => {
     const input = page.getByLabel("Webpage URL");
     await input.fill("https://example.com/a");
     await page.getByRole("button", { name: /distill this page/i }).click();
-    await expect(appAlert(page)).toContainText(/rate limit/i);
-    await expect(page.getByText(/quota reached/i)).toBeVisible();
+    await expect(appAlert(page)).toContainText(/too many requests/i);
+    await expect(page.getByText(/quota reached/i)).toHaveCount(0);
 
     mode = "network";
     await page.getByRole("button", { name: /distill this page/i }).click();

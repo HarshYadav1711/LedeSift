@@ -19,10 +19,11 @@ function isSummarizeResponse(value: unknown): value is SummarizeResponse {
 }
 
 function platformRateLimited(status: number): ClientSummarizeResult {
+  // Platform/WAF 429s are request throttles, not Gemini quota exhaustion.
   return {
     kind: "error",
     code: "AI_RATE_LIMITED",
-    message: "The summarization service rate limit was reached. Try again later.",
+    message: "Too many requests. Please wait a moment and try again.",
     retryable: true,
     status,
   };

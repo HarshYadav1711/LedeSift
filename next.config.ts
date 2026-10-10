@@ -11,6 +11,9 @@ const nextConfig: NextConfig = {
   //
   // jsdom is pinned to 26.x: 27+ pulls ESM-only @exodus/bytes, and Vercel's
   // serverless Node loader rejects require(ESM) (ERR_REQUIRE_ESM → empty 500).
+  //
+  // Tailwind: Turbopack uses `@tailwindcss/turbopack` below; webpack uses
+  // `postcss.config.mjs` + `@tailwindcss/postcss` so production CSS utilities load.
   turbopack: {
     rules: {
       "*.css": {

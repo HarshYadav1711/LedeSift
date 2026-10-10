@@ -147,7 +147,7 @@ function titleForError(code: string): string {
     case "UNSUPPORTED_CONTENT":
       return "Unsupported page";
     case "AI_RATE_LIMITED":
-      return "Quota reached";
+      return "Too many requests";
     case "MISSING_API_CONFIG":
       return "Service unavailable";
     case "HTTP_ERROR":

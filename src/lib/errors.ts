@@ -48,7 +48,7 @@ const DEFAULT_MESSAGES: Record<ErrorCode, string> = {
   AI_INPUT_TOO_LARGE: "The extracted content exceeds the summarization input limit.",
   AI_AUTH_FAILED: "The summarization service could not authenticate.",
   AI_MODEL_UNAVAILABLE: "The summarization model is unavailable.",
-  AI_RATE_LIMITED: "The summarization service rate limit was reached. Try again later.",
+  AI_RATE_LIMITED: "Too many requests. Please wait a moment and try again.",
   AI_TIMEOUT: "The summarization request timed out.",
   AI_NETWORK_ERROR: "The summarization service could not be reached.",
   AI_SAFETY_BLOCKED: "The model declined to summarize this content.",

@@ -95,7 +95,7 @@ describe("SummarizeApp", () => {
     requestSummarize.mockResolvedValue({
       kind: "error",
       code: "AI_RATE_LIMITED",
-      message: "The summarization service rate limit was reached. Try again later.",
+      message: "Too many requests. Please wait a moment and try again.",
       retryable: false,
       status: 429,
     });
@@ -110,9 +110,9 @@ describe("SummarizeApp", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByRole("alert")).toHaveTextContent(/rate limit/i);
+      expect(screen.getByRole("alert")).toHaveTextContent(/too many requests/i);
     });
-    expect(screen.getByText(/quota reached/i)).toBeInTheDocument();
+    expect(screen.queryByText(/quota reached/i)).not.toBeInTheDocument();
   });
 
   it("marks the control busy while loading and handles empty keyPoints", async () => {

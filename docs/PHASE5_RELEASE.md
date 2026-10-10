@@ -1,73 +1,65 @@
 # Phase 5 release — LedeSift
 
-**Status:** PROTECTED-DEPLOYMENT STAGE COMPLETE — awaiting explicit approval for public release  
+**Status:** PROTECTED DEPLOYMENT VERIFIED · GitHub synchronized · **Public release not authorized** · Final submission pending
+
 **Do not treat this document as authorization to remove Production authentication.**
+
+## Status matrix
+
+| Item | Status |
+| --- | --- |
+| Protected deployment verified | **Yes** — SSO All Deployments; live Gemini; Node 24; `maxDuration` 60 |
+| Production WAF verified | **Yes** — `ledesift-summarize-limit` published and enforced |
+| GitHub synchronization | **Done** — `main` @ `d5be78c` on https://github.com/HarshYadav1711/LedeSift |
+| Git → Vercel production deploy | **Done** — production deployment SHA matches `d5be78c` |
+| Public release | **Not authorized** — authentication remains All Deployments |
+| Final submission | **Pending** |
 
 ## Hobby eligibility (documented)
 
 Personal Hobby use for this independently developed recruitment-assessment project is treated as eligible under Vercel’s personal/noncommercial Hobby rules (no monetization, no team commercial use, no Pro upgrade). Residual fair-use / ToS judgment remains with the account holder.
 
-## Starting Git state (context lock)
+## Git / Vercel parity (observed)
 
 | Item | Value |
 | --- | --- |
-| Branch | `main` |
-| HEAD at stage start | `94f8e07` — `test: harden LedeSift browser workflows and security boundaries` |
-| Remote | `https://github.com/HarshYadav1711/LedeSift.git` |
-| GitHub visibility (observed) | **PUBLIC** |
-| Node (local) | v24.19.0 |
-| Next.js | 16.4.0 |
-
-## Protected deployment (verified this stage)
-
-| Item | Value |
-| --- | --- |
+| GitHub | `https://github.com/HarshYadav1711/LedeSift` (public, default branch `main`) |
 | Vercel project | `ledesift` (`prj_uYtpIKavgR51hqCMaXl5mvEGxUVJ`) |
-| Team / scope | `harshs-projects-fc8c193d` / Hobby |
-| Production alias | `https://ledesift-harshs-projects-fc8c193d.vercel.app` |
-| Auth | Vercel Authentication **All Deployments** (unauthenticated `/` → `302` → `vercel.com/sso-api`) |
-| Runtime | Node.js `nodejs24.x` (project Node 24.x) |
-| Function duration | `maxDuration = 60` (`export` on route + `vercel.json`) |
-| Env (Production) | `GEMINI_API_KEY` Encrypted; `GEMINI_MODEL=gemini-2.5-flash-lite` Encrypted — values not printed |
-| Preview env | Not configured (no demonstrated need) |
-| Framework | `nextjs`; production build `next build --webpack` |
+| Git link | `HarshYadav1711/LedeSift`, **production branch `main`** |
+| Push to `main` | Triggers production deployment (confirmed for `d5be78c`) |
+| Production aliases | `https://ledesift.vercel.app`, `https://ledesift-harshs-projects-fc8c193d.vercel.app` |
+| Auth | `ssoProtection.deploymentType: "all"` (unauthenticated `/` → 302 → `vercel.com/sso-api`) |
+| Runtime | Node.js 24.x / `nodejs24.x` |
+| Function duration | `maxDuration = 60` (route export + `vercel.json`) |
+| Env (Production) | `GEMINI_API_KEY`, `GEMINI_MODEL` Encrypted — values not printed |
+| Preview env | Not configured |
 
-## Local validation (this stage)
+## Local validation baseline (Phase 5 / 5B)
 
-| Command | Exit | Result |
-| --- | --- | --- |
-| `npx tsc --noEmit` | 0 | |
-| `npm run lint` | 0 | `.vercel/**` ignored |
-| `npm run build` | 0 | `/` static; `/api/summarize` dynamic Node |
-| `npm test` | 0 | **126 passed \| 2 skipped** |
+| Command | Expected |
+| --- | --- |
+| `npm audit --omit=dev` | 0 vulnerabilities |
+| `npm audit` | 5 high `braces` via `eslint-config-next` (dev baseline; no force upgrade) |
+| `npm ls jsdom` | `jsdom@26.1.0` |
+| Production build | `next build --webpack` |
 
-## Production defects found and addressed
+## Production defects addressed in Phase 5 / 5B
 
-1. **Empty HTTP 500 on `/api/summarize`** — Vercel serverless Node loader rejects `require()` of ESM `@exodus/bytes` pulled by jsdom 27+. **Fix:** pin `jsdom@26.1.0` (whatwg-encoding path). Verified with live Gemini success after redeploy.
-2. **WAF 429 UX** — Platform body `{"error":{"code":"429","message":"Too Many Requests",...}}` is not `SummarizeResponse`. Client previously showed generic INTERNAL_ERROR. **Fix:** map HTTP 429 (JSON or empty) to `AI_RATE_LIMITED` in `src/lib/api/client.ts` (unit tested).
+1. Empty HTTP 500 — jsdom 27+ ESM `@exodus/bytes` under Vercel loader → pin `jsdom@26.1.0` + webpack production build.
+2. WAF 429 UX — map non-`SummarizeResponse` / empty 429 to shared rate-limit handling; user copy describes **request** throttling (not Gemini quota).
+3. Webpack CSS gap (5B) — `@tailwindcss/turbopack` alone does not process Tailwind under `next build --webpack` → add `postcss.config.mjs` + `@tailwindcss/postcss` so production utilities (layout, touch targets, wrapping) apply. **Live production at `d5be78c` still serves CSS without utility classes** (fonts/globals only); this fix is local/uncommitted until the next authorized commit + Git-triggered deploy.
 
-## WAF (published / active)
+## WAF
 
 | Field | Value |
 | --- | --- |
-| Rule id | `rule_ledesift_summarize_limit_HLI2gi` |
-| Name | `ledesift-summarize-limit` |
-| Path | `/api/summarize` (`eq`) |
-| Method | `POST` (`eq`) |
-| Key | `ip` |
-| Algorithm | `fixed_window` |
-| Window | 60 seconds |
-| Threshold | 5 |
-| Action | HTTP 429 (`rate_limit`) |
-| Active config | `firewallEnabled: true`, custom rules count **1** |
-| Enforcement evidence | Authenticated bypass burst: requests 1–5 → app JSON; request 6 → **429** platform JSON |
+| Rule | `ledesift-summarize-limit` (`rule_ledesift_summarize_limit_HLI2gi`) |
+| Match | POST `/api/summarize` |
+| Key / algo | IP / fixed_window 60s / 5 → HTTP 429 |
+| Active | Yes (`firewallEnabled: true`) |
 
-Notes: counters are **per region**. Authentication was **not** disabled for the test; protection bypass header was used.
+Counters are **per region**.
 
 ## Public release
 
-**Not authorized.** Production remains SSO-protected. Do not remove authentication or claim public availability until explicit approval.
-
-## Manual Git (not performed)
-
-No automatic commit or push in this stage. See checkpoint report for suggested commands.
+**Not authorized.** Do not remove authentication or claim public availability until explicit approval.
